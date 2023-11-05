@@ -10,6 +10,7 @@ let employees = [];
 let currenceData;
 
 const getCurrencyConversionData = async () => {
+    console.log('Loading currency conversion data via API call...');
     const options = {
         method: 'GET',
         redirect: 'follow'
@@ -26,7 +27,8 @@ const getCurrencyConversionData = async () => {
 }
 
 const getSalary = (amountUSD, currency) => {
-    const amount = (currency === 'USD') ? amountUSD : amountUSD * currenceData.rates[currency];
+    //As API base currency is EUR and salaries are stored in USD, we have to conver to USD first
+    const amount = (currency === 'USD') ? amountUSD : (amountUSD / currenceData.rates['USD']) * currenceData.rates[currency];
     const formatter = Intl.NumberFormat('us-US', {
         style: 'currency',
         currency: currency
@@ -161,7 +163,8 @@ function searchById() {
     //const result = employees.find(e => e.id === id);
 
     if(result) {
-        console.log(`Found employee: ${JSON.stringify(result, null, 2)}`);
+        //console.log(`Found employee: ${JSON.stringify(result, null, 2)}`);
+        logEmployee(result);
     } else {
         console.log(`Failed to find employee with id: ${id}`);
     }
@@ -234,10 +237,10 @@ const main = async () => {
     console.log('end of main');
 }
 
-loadData()
-    .then(getCurrencyConversionData)
+// Concurrently call loadData() and getCurrencyConversionData()
+Promise.all([loadData(), getCurrencyConversionData()])
     .then(main)
     .catch((err) => {
-        console.error('Could not complere start-up');
+        console.error(`Could not complete start-up.  Error: ${err.message}`);
         throw err;
     });

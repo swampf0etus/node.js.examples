@@ -712,5 +712,14 @@
     "startDate": "2000-09-10T23:00:00.000Z",
     "salaryUSD": "35000",
     "localCurrency": "GBP"
+  },
+  {
+    "id": 66,
+    "firstName": "Alan",
+    "lastName": "Jenkins",
+    "isActive": true,
+    "startDate": "2006-04-18T23:00:00.000Z",
+    "salaryUSD": "25000",
+    "localCurrency": "EUR"
   }
 ]
