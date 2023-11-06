@@ -8,6 +8,9 @@
 		},
 		{
 			"path": "async_concepts"
+		},
+		{
+			"path": "modules"
 		}
 	]
 }

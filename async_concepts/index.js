@@ -1,40 +1,14 @@
 import { error } from 'node:console';
-import fs from 'node:fs/promises';
 import createPrompt from 'prompt-sync';
+import { loadData, writeData } from './data.js';
+import { getCurrencyConversionData, getSalary } from './currency.js';
 
-let prompt = createPrompt();
+let prompt = createPrompt({sigint: true});
 
 // Global vars
 
 let employees = [];
 let currenceData;
-
-const getCurrencyConversionData = async () => {
-    console.log('Loading currency conversion data via API call...');
-    const options = {
-        method: 'GET',
-        redirect: 'follow'
-    }
-
-    const apiKey = 'b78cb32317d1e2b1c3d123b8b4366f21';
-    const response = await fetch(`http://api.exchangeratesapi.io/v1/latest?access_key=${apiKey}`, options);
-
-    if(!response.ok) {
-        throw new Error(`Error calling API. Status: ${response.status}`);
-    }
-
-    currenceData = await response.json();
-}
-
-const getSalary = (amountUSD, currency) => {
-    //As API base currency is EUR and salaries are stored in USD, we have to conver to USD first
-    const amount = (currency === 'USD') ? amountUSD : (amountUSD / currenceData.rates['USD']) * currenceData.rates[currency];
-    const formatter = Intl.NumberFormat('us-US', {
-        style: 'currency',
-        currency: currency
-    });
-    return formatter.format(amount);
-}
 
 const logEmployee = (employee) => {
     Object.entries(employee).forEach(entry => {
@@ -43,29 +17,8 @@ const logEmployee = (employee) => {
             console.log(`${entry[0]}: ${entry[1]}`);
         }
     });
-    console.log(`Salary USD: ${getSalary(employee.salaryUSD, 'USD')}`);
-    console.log(`Local Salary: ${getSalary(employee.salaryUSD, employee.localCurrency)}`);
-}
-
-const loadData = async () => {
-    console.log('Loading employee data');
-    try {
-        const fileData = await fs.readFile('./data.json', 'utf8');
-        employees = JSON.parse(fileData);
-    } catch (error) {
-        console.error('Failed to load data.json');
-        throw error;
-    }
-}
-
-const writeData = async () => {
-    console.log('Writing employee data');
-    try {
-        await fs.writeFile('./data.json', JSON.stringify(employees, null, 2));
-    } catch (error) {
-        console.error('Failed to write data.json');
-        throw error;
-    }
+    console.log(`Salary USD: ${getSalary(employee.salaryUSD, 'USD', currenceData)}`);
+    console.log(`Local Salary: ${getSalary(employee.salaryUSD, employee.localCurrency, currenceData)}`);
 }
 
 function listEmployees() {
@@ -148,7 +101,7 @@ async function addEmployee() {
     
     // employee.startDate
     employees.push(employee);
-    await writeData();
+    await writeData(employees);
 }
 
 // Search functions ------------------
@@ -239,7 +192,11 @@ const main = async () => {
 
 // Concurrently call loadData() and getCurrencyConversionData()
 Promise.all([loadData(), getCurrencyConversionData()])
-    .then(main)
+    .then((results) => {
+        employees = results[0];
+        currenceData = results[1];
+        return main();
+    })
     .catch((err) => {
         console.error(`Could not complete start-up.  Error: ${err.message}`);
         throw err;
