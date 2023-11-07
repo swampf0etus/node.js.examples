@@ -1,6 +1,7 @@
 import { error } from 'node:console';
 import createPrompt from 'prompt-sync';
-import { loadData, writeData } from './data.js';
+//import { loadData, writeData } from './data.js';
+import { getAllEmployees, insertEmployee } from './database.js';
 import { getCurrencyConversionData, getSalary } from './currency.js';
 
 let prompt = createPrompt({sigint: true});
@@ -74,6 +75,9 @@ function isIntegerValid(min, max) {
 }
 
 const getNextEmployeeId = () => {
+    if(employees.length === 0) {
+        return 1;
+    }
     const maxId = Math.max(...employees.map((e) => {return e.id}));
     return maxId + 1;
 }
@@ -87,21 +91,29 @@ async function addEmployee() {
     // Calls it getInput() here pass a function (pointer) to a validator (notice no ()s )
     employee.firstName = getInput('First name: ', isStringInputValid);
     employee.lastName = getInput('Last name: ', isStringInputValid);
+    employee.email = getInput('Email address: ', isStringInputValid);
     employee.isActive = getInput('Active employee? (yes/no): ', isBooleanInputValid, (i) => { return (i.toLowerCase() === 'yes');});
     
     // Before calling getInput here, we call isIntegerValid(), which returns a function (pointer) to a validator
     let day = getInput('Enter Start date day: ', isIntegerValid(1, 31));
     let month = getInput('Enter Start date month: ', isIntegerValid(1, 12));
-    let year = getInput('Enter Start date year: ', isIntegerValid(1970, 2007));
+    let year = getInput('Enter Start date year: ', isIntegerValid(2010, 2023));
     employee.startDate = new Date(year, month - 1, day);
+
+    day = getInput('Enter DOB date day: ', isIntegerValid(1, 31));
+    month = getInput('Enter DOB date month: ', isIntegerValid(1, 12));
+    year = getInput('Enter DOB date year: ', isIntegerValid(1970, 2007));
+    employee.dateBirth = new Date(year, month - 1, day);
+
     employee.salaryUSD = getInput('Enter salary: ', isIntegerValid(10000, 1000000));
     employee.localCurrency = getInput('Enter currency code: ', isCurrenceCodeValid);
 
-    //console.log(`Employee added: ${JSON.stringify(employee, null, 2)}`);
-    
-    // employee.startDate
-    employees.push(employee);
-    await writeData(employees);
+    // Write to file
+    //employees.push(employee);
+    //await writeData(employees);
+
+    //Write to DB
+    await insertEmployee(employee);
 }
 
 // Search functions ------------------
@@ -189,9 +201,13 @@ const main = async () => {
 
     console.log('end of main');
 }
-
+// Load from file
 // Concurrently call loadData() and getCurrencyConversionData()
-Promise.all([loadData(), getCurrencyConversionData()])
+// Promise.all([loadData(), getCurrencyConversionData()])
+
+// Load from database
+// Concurrently call getAllEmployees() and getCurrencyConversionData()
+Promise.all([getAllEmployees(), getCurrencyConversionData()])
     .then((results) => {
         employees = results[0];
         currenceData = results[1];
