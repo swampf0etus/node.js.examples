@@ -17,6 +17,9 @@
 		},
 		{
 			"path": "web-dev"
+		},
+		{
+			"path": "jsgs"
 		}
 	]
 }
